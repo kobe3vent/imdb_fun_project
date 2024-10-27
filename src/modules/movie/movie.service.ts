@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import axios from "axios";
-import { MovieDTO } from "./dto/movie.dto";
+
+import { AppConfigService } from "@/src/shared/config.service";
 import { PdfGenerator } from "@/src/shared/pdf-tool";
+
+import { MovieDTO } from "./dto/movie.dto";
 
 export interface TmdbResponse {
   page: number;
@@ -19,35 +22,29 @@ export interface TmdbMovieDetailResponse {
 }
 @Injectable()
 export class MovieService {
-  async findAll(): Promise<any> {
+  constructor(readonly appConfig: AppConfigService) {}
+  async findAll(): Promise<Buffer> {
     const url = "https://api.themoviedb.org/3/movie/popular";
     const { data } = await axios.get<TmdbResponse>(url, {
       headers: {
-        Authorization: `Bearer ${process.env.TMDB_READ_KEY}`,
+        Authorization: `Bearer ${this.appConfig.TMBD_CONFIG.READ_KEY}`,
       },
     });
-    console.log("data: ", data);
 
     const pdfHandler = new PdfGenerator(data.results);
     const pdfBuffer = await pdfHandler.createBuffer();
     return pdfBuffer;
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<Buffer> {
     const url = `https://api.themoviedb.org/3/movie/${id}`;
     const { data } = await axios.get<MovieDTO>(url, {
       headers: {
-        Authorization: `Bearer ${process.env.TMDB_READ_KEY}`,
+        Authorization: `Bearer ${this.appConfig.TMBD_CONFIG.READ_KEY}`,
       },
     });
-    console.log("data: ", data);
     const pdfHandler = new PdfGenerator([data]);
     const pdfBuffer = await pdfHandler.createBuffer(true);
     return pdfBuffer;
-
-    /*     {{ title }} 
-{{ release_date }} 
-{{ vote_average }} 
-{{ poster_image }} */
   }
 }

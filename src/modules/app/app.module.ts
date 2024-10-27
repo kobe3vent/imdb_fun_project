@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { LoggerModule } from "@/src/shared/logger/logger.module";
+import { SharedModule } from "@/src/shared/shared.module";
 
 import { HealthModule } from "../health/health.module";
 import { MovieModule } from "../movie/movie.module";
@@ -9,7 +9,7 @@ import { MovieModule } from "../movie/movie.module";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
-    LoggerModule,
+    SharedModule,
     HealthModule,
     MovieModule,
   ],

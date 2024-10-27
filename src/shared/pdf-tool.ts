@@ -1,15 +1,7 @@
-import {
-  createWriteStream,
-  unlinkSync,
-  writeFile,
-  writeFileSync,
-} from "node:fs";
-
 import axios from "axios";
 import PDFDocument from "pdfkit-table";
 
 import { MovieDTO } from "../modules/movie/dto/movie.dto";
-import { TmdbResponse } from "../modules/movie/movie.service";
 
 const font = "Helvetica";
 const fontBold = "Helvetica-Bold";
@@ -62,11 +54,7 @@ const TABLE_OPTIONS = {
 
 const IMG_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-const ySTART_ACCESS_SECURITY = 420;
-const ySTART_MISSION_INFO = 540;
 const ySTART_FOOTER = 750;
-
-const SUBTITLE_TOP_PADDING = 30;
 
 export class PdfGenerator {
   private doc = new PDFDocument({
@@ -173,7 +161,7 @@ export class PdfGenerator {
       .font(fontBold)
       .fillColor(fontColorBlue)
       .fontSize(titleFontSize)
-      .text("TMBD Movie List", this.marginRight + 130, yBase, {
+      .text("IMBD Movie List", this.marginRight, yBase, {
         align: "center",
       })
       .moveDown();
