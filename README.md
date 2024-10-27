@@ -8,8 +8,6 @@
   Template for new services based on NestJS with the Best Practices and Ready for Production
 </p>
 
-
-
 ## Goal
 
 Query IMDB api for movie details and generate pdf with relevant information
@@ -18,12 +16,9 @@ Query IMDB api for movie details and generate pdf with relevant information
 
 1. NestJS
 2. ⚡️ Use [Fastify](https://fastify.dev/) as Web Framework for Performance
-3. 🐶 Integration with [husky](https://typicode.github.io/husky/) to ensure we have good quality and conventions 
+3. 🐶 Integration with [husky](https://typicode.github.io/husky/) to ensure we have good quality and conventions
 4. 🧪 Testing with [Vitest](https://vitest.dev/) and [supertest](https://github.com/ladjs/supertest) for unit and e2e tests.
 5. Yarn for performance
-
-
-
 
 ## 🧑‍💻 Deploying
 
@@ -69,9 +64,8 @@ curl --request GET \
 If you want to stop developing, you can stop the service running:
 
 ```bash
-docker-compose down 
+docker-compose down
 ```
-
 
 ## ✅ Testing
 
@@ -93,8 +87,6 @@ Or if you want e2e tests, you can execute:
 yarn test:e2e
 ```
 
-
-
 ## 💅 Linting
 
 To run the linter you can execute:
@@ -108,3 +100,13 @@ And for trying to fix lint issues automatically, you can run:
 ```bash
 yarn lint:fix
 ```
+
+## RoadMap
+
+Introduce clickable navigational arrows on pdf which will direct to the next page for a fresh new list
+
+Rate-limiting on api
+
+reconstruct pdf-tool class to be dynamic
+
+testing

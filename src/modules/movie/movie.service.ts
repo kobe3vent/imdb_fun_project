@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import axios from "axios";
 
 import { AppConfigService } from "@/src/shared/config.service";
@@ -24,7 +24,8 @@ export interface TmdbMovieDetailResponse {
 export class MovieService {
   constructor(readonly appConfig: AppConfigService) {}
   async findAll(): Promise<Buffer> {
-    const url = "https://api.themoviedb.org/3/movie/popular";
+    const url = `${this.appConfig.TMBD_CONFIG.HOST}/${this.appConfig.TMBD_CONFIG.VERSION}/movie/popular`;
+
     const { data } = await axios.get<TmdbResponse>(url, {
       headers: {
         Authorization: `Bearer ${this.appConfig.TMBD_CONFIG.READ_KEY}`,
@@ -37,7 +38,10 @@ export class MovieService {
   }
 
   async findOne(id: number): Promise<Buffer> {
-    const url = `https://api.themoviedb.org/3/movie/${id}`;
+    if (!id || !Number.isInteger(id))
+      throw new BadRequestException("id not valid");
+
+    const url = `${this.appConfig.TMBD_CONFIG.HOST}/${this.appConfig.TMBD_CONFIG.VERSION}/movie/${id}`;
     const { data } = await axios.get<MovieDTO>(url, {
       headers: {
         Authorization: `Bearer ${this.appConfig.TMBD_CONFIG.READ_KEY}`,

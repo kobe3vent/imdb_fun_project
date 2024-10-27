@@ -1,47 +1,26 @@
+/* eslint-disable no-async-promise-executor */
+/* eslint-disable @typescript-eslint/no-misused-promises */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+import { InternalServerErrorException } from "@nestjs/common";
 import axios from "axios";
 import PDFDocument from "pdfkit-table";
 
 import { MovieDTO } from "../modules/movie/dto/movie.dto";
-
 const font = "Helvetica";
 const fontBold = "Helvetica-Bold";
 const fontColorBlue = "#1B4385";
 const fontColorBlack = "#000000";
 const titleFontSize = 16;
 
-interface MovieInfoDisplayOnPdf {
-  title: string;
-  release_date: string;
-  vote_average: number;
-  hyperLink: string;
+interface IYaxisSpacing {
+  key1: object;
+  value1: object;
+  key2: object;
+  value2: object;
+  key3: object;
+  value3: object;
 }
-
-const QUESTION_STYLE_OPTION = {
-  fontSize: 12,
-  fontFamily: fontBold,
-  color: fontColorBlue,
-};
-
-const CLIENT_INFO_STYLE_OPTION = {
-  fontSize: 12,
-  fontFamily: font,
-  color: fontColorBlack,
-};
-
-const yAxisRowSpacing = {
-  key1: { label: " " },
-  value1: {
-    label: "",
-  },
-  key2: { label: "" },
-  value2: {
-    label: "",
-  },
-  key3: { label: "" },
-  value3: {
-    label: "",
-  },
-};
 
 const TABLE_OPTIONS = {
   hideHeader: true,
@@ -52,20 +31,18 @@ const TABLE_OPTIONS = {
   x: 20,
 };
 
-const IMG_BASE_URL = "https://image.tmdb.org/t/p/w500";
-
 const ySTART_FOOTER = 750;
 
 export class PdfGenerator {
-  private doc = new PDFDocument({
-    size: "A4",
-    margin: 20,
-  });
-  private marginRight = 20;
+  private readonly doc: PDFDocument;
+  private readonly marginRight = 20;
 
   public filename: string;
-  private apiResponse: MovieDTO[];
-  private generalInfoTable = {
+  private readonly apiResponse: MovieDTO[];
+  private readonly generalInfoTable: {
+    headers: object[];
+    data: IYaxisSpacing[];
+  } = {
     headers: [
       { label: "key1", property: "key1", width: 2 },
       { label: "value1", property: "value1", width: 180 },
@@ -74,10 +51,14 @@ export class PdfGenerator {
       { label: "key3", property: "key3", width: 8 },
       { label: "value3", property: "value3", width: 70 },
     ],
-    datas: [],
+    data: [],
   };
 
   constructor(apiResponse: MovieDTO[]) {
+    this.doc = new PDFDocument({
+      size: "A4",
+      margin: 20,
+    });
     this.apiResponse = apiResponse;
     this.filename = `movies_${new Date().toString()}.pdf`;
   }
@@ -86,13 +67,12 @@ export class PdfGenerator {
     try {
       const pdfBuffer: Buffer = await new Promise(async resolve => {
         this.generateHeader();
-        this.generateGeneralInformation();
         await this.writeBody(this.apiResponse, displayPoster);
         this.generateFooter();
         await this.doc.table(this.generalInfoTable, TABLE_OPTIONS);
 
         this.doc.end();
-        const buffer = [];
+        const buffer: Buffer[] = [];
         this.doc.on("data", buffer.push.bind(buffer));
         this.doc.on("end", () => {
           const data = Buffer.concat(buffer);
@@ -101,14 +81,15 @@ export class PdfGenerator {
       });
       return pdfBuffer;
     } catch (error) {
-      console.log(`${JSON.stringify(error, null, 2)}`);
-      throw new BadRequestException(error);
+      console.error(`${JSON.stringify(error, undefined, 2)}`);
+      throw new InternalServerErrorException(error);
     }
   }
 
-  async writeBody(array: MovieDTO[], displayPoster: boolean): void {
+  async writeBody(array: MovieDTO[], displayPoster: boolean): Promise<void> {
     let yAxis = 80;
     const xMargin = 60;
+    const textWidth = 80;
     for (const movie of array) {
       let xAxis = 10;
       this.doc
@@ -117,7 +98,7 @@ export class PdfGenerator {
         .font(font)
         .text(`${movie.title}`, xAxis, yAxis, {
           align: "left",
-          width: 200,
+          width: textWidth * 4,
           link: `http://${process.env.APP_HOST}:${process.env.PORT}/movie/${movie.id}`,
         });
       xAxis += xMargin * 3;
@@ -127,7 +108,7 @@ export class PdfGenerator {
         .font(font)
         .text(`${movie.release_date}`, xAxis, yAxis, {
           align: "center",
-          width: 80,
+          width: textWidth,
         });
 
       xAxis += xMargin;
@@ -137,12 +118,12 @@ export class PdfGenerator {
         .font(font)
         .text(`${movie.vote_average}`, xAxis, yAxis, {
           align: "right",
-          width: 80,
+          width: textWidth,
         });
 
       if (movie?.poster_path && displayPoster) {
-        const url = `${IMG_BASE_URL}${movie.poster_path}`;
-        const { data } = await axios.get(url, {
+        const url = `${process.env.TMBD_IMG_BASE_URL}${movie.poster_path}`;
+        const { data } = await axios.get<ArrayBuffer>(url, {
           responseType: "arraybuffer",
         });
 
@@ -157,6 +138,7 @@ export class PdfGenerator {
 
   generateHeader(): void {
     const yBase = 30;
+    const xMargin = 60;
     this.doc
       .font(fontBold)
       .fillColor(fontColorBlue)
@@ -165,34 +147,37 @@ export class PdfGenerator {
         align: "center",
       })
       .moveDown();
-  }
 
-  generateGeneralInformation(): void {
-    this.generalInfoTable.datas.push(
-      yAxisRowSpacing,
-      yAxisRowSpacing,
-      yAxisRowSpacing,
-      /*       {
-        key1: { label: "", options: QUESTION_STYLE_OPTION },
-        value1: {
-          label: `Page ${this.apiResponse.page}`,
-          options: CLIENT_INFO_STYLE_OPTION,
-        },
-        key2: {
-          label: "",
-          options: QUESTION_STYLE_OPTION,
-        },
-        value2: {
-          label: `Total pages ${this.apiResponse.total_pages}`,
-          options: CLIENT_INFO_STYLE_OPTION,
-        },
-        key3: { label: "", options: QUESTION_STYLE_OPTION },
-        value3: {
-          label: `Total Movies: ${this.apiResponse.total_results}`,
-          options: CLIENT_INFO_STYLE_OPTION,
-        },
-      }, */
-    );
+    let xAxis = 10;
+    const textWidth = 80;
+    const nextLine = yBase * 2;
+    this.doc
+      .fontSize(11)
+      .fillColor(fontColorBlue)
+      .font(font)
+      .text(`Titles`, xAxis, nextLine, {
+        align: "left",
+        width: textWidth,
+      });
+    xAxis += xMargin * 3;
+    this.doc
+      .fontSize(11)
+      .fillColor(fontColorBlue)
+      .font(font)
+      .text(`Release `, xAxis, nextLine, {
+        align: "center",
+        width: textWidth,
+      });
+
+    xAxis += xMargin;
+    this.doc
+      .fontSize(11)
+      .fillColor(fontColorBlue)
+      .font(font)
+      .text(`Votes`, xAxis, nextLine, {
+        align: "right",
+        width: textWidth,
+      });
   }
 
   generateFooter(): void {
@@ -207,10 +192,14 @@ export class PdfGenerator {
       .fontSize(11)
       .fillColor(fontColorBlack)
       .font(font)
-      .text(`movies movies`, this.marginRight + 8, ySTART_FOOTER + 10, {
-        align: "center",
-        width: 550,
-        link: "https://google.com",
-      });
+      .text(
+        `Popular movie list requested at ${new Date().toLocaleDateString()}`,
+        this.marginRight + 8,
+        ySTART_FOOTER + 10,
+        {
+          align: "center",
+          width: 550,
+        },
+      );
   }
 }
