@@ -94,11 +94,11 @@ export class PdfGenerator {
     this.displayImages = displayImages ?? false;
   }
 
-  async createBuffer(displayPoster = false): Promise<Buffer> {
+  async createBuffer(): Promise<Buffer> {
     try {
       const pdfBuffer: Buffer = await new Promise(async resolve => {
         this.generateHeader();
-        await this.writeBody(displayPoster);
+        await this.writeBody();
         this.generateFooter();
         await this.doc.table(this.generalInfoTable, TABLE_OPTIONS);
 

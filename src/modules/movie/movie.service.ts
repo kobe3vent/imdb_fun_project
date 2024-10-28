@@ -70,7 +70,7 @@ export class MovieService {
       tableRows: [this.convertMovieDtoForPdf(data)],
       footer: `Information on the movie ${data.title} at ${new Date().toLocaleDateString()}`,
     });
-    const pdfBuffer = await pdfHandler.createBuffer(true);
+    const pdfBuffer = await pdfHandler.createBuffer();
     return pdfBuffer;
   }
 
