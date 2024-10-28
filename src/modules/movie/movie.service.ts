@@ -60,27 +60,40 @@ export class MovieService {
       },
     });
 
+    const adaptedMovie = this.convertMovieDtoForPdf(data, false);
+    adaptedMovie.movie.push({
+      columnName: "Poster",
+      img: `${this.appConfig.TMBD_CONFIG.IMG_BASE_URL}${data.poster_path}`,
+      columnPosition: 4,
+      text: "",
+    });
     const pdfHandler = new PdfGenerator({
       title: `Movie: ${data.title}`,
       columNames: [
         { name: "Title", position: 1 },
         { name: "Release", position: 2 },
         { name: "Vote", position: 3 },
+        { name: "Poster", position: 4 },
       ],
-      tableRows: [this.convertMovieDtoForPdf(data)],
+      tableRows: [adaptedMovie],
       footer: `Information on the movie ${data.title} at ${new Date().toLocaleDateString()}`,
     });
     const pdfBuffer = await pdfHandler.createBuffer();
     return pdfBuffer;
   }
 
-  convertMovieDtoForPdf(movie: MovieDTO): { [key: string]: ITableRow[] } {
+  convertMovieDtoForPdf(
+    movie: MovieDTO,
+    enableHyperLink = true,
+  ): { movie: ITableRow[] } {
     return {
-      [movie.id]: [
+      movie: [
         {
           columnName: "Title",
           text: movie.title,
-          hyperlink: `http://${process.env.APP_HOST}:${process.env.PORT}/movie/${movie.id}`,
+          hyperlink: enableHyperLink
+            ? `http://${process.env.APP_HOST}:${process.env.PORT}/movie/${movie.id}`
+            : undefined,
           columnPosition: 1,
         },
         {

@@ -14,6 +14,9 @@ const fontColorBlue = "#1B4385";
 const fontColorBlack = "#000000";
 const titleFontSize = 16;
 
+const xAXISMARGIN = 140;
+const TEXTWIDTH = 120;
+
 interface IYaxisSpacing {
   key1: object;
   value1: object;
@@ -37,7 +40,7 @@ export interface ITableRow {
 interface IPdfConstructor {
   title: string;
   columNames: IColumn[];
-  tableRows: { [key: string]: ITableRow[] }[];
+  tableRows: { movie: ITableRow[] }[];
   footer: string;
   displayImages?: boolean;
 }
@@ -58,7 +61,7 @@ export class PdfGenerator {
 
   private readonly title: string;
   private readonly coloumns: IColumn[];
-  private readonly rows: { [key: string]: ITableRow[] }[];
+  private readonly rows: { movie: ITableRow[] }[];
   private readonly footer: string;
   private readonly displayImages: boolean;
   private readonly generalInfoTable: {
@@ -119,19 +122,19 @@ export class PdfGenerator {
 
   async writeBody(): Promise<void> {
     let yAxis = 80;
-    const xMargin = 60;
-    const textWidth = 80;
 
-    for (const rowId of this.rows) {
-      const sortedRow = rowId.id.toSorted((a, b) => {
+    for (const row of this.rows) {
+      const sortedRow = row.movie.toSorted((a, b) => {
         return a.columnPosition === b.columnPosition
           ? 0
           : a.columnPosition > b.columnPosition
-            ? -1
-            : 1;
+            ? 1
+            : -1;
       });
 
       let xAxis = 10;
+      const xMargin =
+        sortedRow.length > 3 ? sortedRow.length * 2 : sortedRow.length * 10;
       for (const row of sortedRow) {
         if (row?.img) {
           const url = `${process.env.TMBD_IMG_BASE_URL}${row.img}`;
@@ -149,11 +152,11 @@ export class PdfGenerator {
             .font(font)
             .text(`${row.text}`, xAxis, yAxis, {
               align: "left",
-              width: textWidth * 4,
+              width: TEXTWIDTH * 2,
               ...(row?.hyperlink && { link: row.hyperlink }),
             });
         }
-        xAxis += xMargin * 2;
+        xAxis += xAXISMARGIN + xMargin;
       }
       yAxis += 30;
     }
@@ -161,9 +164,7 @@ export class PdfGenerator {
 
   generateHeader(): void {
     const yBase = 30;
-    const xMargin = 60;
     let xAxis = 10;
-    const textWidth = 80;
     const nextLine = yBase * 2;
 
     this.doc
@@ -176,39 +177,25 @@ export class PdfGenerator {
       .moveDown();
 
     const sortedColoumns = this.coloumns.toSorted((a, b) => {
-      return a.position === b.position ? 0 : a.position > b.position ? -1 : 1;
+      return a.position === b.position ? 0 : a.position > b.position ? 1 : -1;
     });
+
+    const xMargin =
+      sortedColoumns.length > 3
+        ? sortedColoumns.length * 2
+        : sortedColoumns.length * 10;
 
     for (const coloum of sortedColoumns) {
       this.doc
         .fontSize(11)
         .fillColor(fontColorBlue)
         .font(font)
-        .text(`${coloum.name} Titles`, xAxis, nextLine, {
+        .text(`${coloum.name}`, xAxis, nextLine, {
           align: "left",
-          width: textWidth,
+          width: TEXTWIDTH,
         });
-      xAxis += xMargin * 2;
+      xAxis += xAXISMARGIN + xMargin;
     }
-
-    /*     this.doc
-      .fontSize(11)
-      .fillColor(fontColorBlue)
-      .font(font)
-      .text(`Release `, xAxis, nextLine, {
-        align: "center",
-        width: textWidth,
-      });
-
-    xAxis += xMargin;
-    this.doc
-      .fontSize(11)
-      .fillColor(fontColorBlue)
-      .font(font)
-      .text(`Votes`, xAxis, nextLine, {
-        align: "right",
-        width: textWidth,
-      }); */
   }
 
   generateFooter(): void {
