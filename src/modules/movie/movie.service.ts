@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import axios from "axios";
 
 import { AppConfigService } from "@/src/shared/config.service";
-import { PdfGenerator } from "@/src/shared/pdf-tool";
+import { ITableRow, PdfGenerator } from "@/src/shared/pdf-tool";
 
 import { MovieDTO } from "./dto/movie.dto";
 
@@ -32,7 +32,19 @@ export class MovieService {
       },
     });
 
-    const pdfHandler = new PdfGenerator(data.results);
+    const rowsForPdf = data.results.map(movie =>
+      this.convertMovieDtoForPdf(movie),
+    );
+    const pdfHandler = new PdfGenerator({
+      title: "Movie List",
+      columNames: [
+        { name: "Title", position: 1 },
+        { name: "Release", position: 2 },
+        { name: "Vote", position: 3 },
+      ],
+      tableRows: rowsForPdf,
+      footer: `Popular movie list requested at ${new Date().toLocaleDateString()}`,
+    });
     const pdfBuffer = await pdfHandler.createBuffer();
     return pdfBuffer;
   }
@@ -47,8 +59,55 @@ export class MovieService {
         Authorization: `Bearer ${this.appConfig.TMBD_CONFIG.READ_KEY}`,
       },
     });
-    const pdfHandler = new PdfGenerator([data]);
-    const pdfBuffer = await pdfHandler.createBuffer(true);
+
+    const adaptedMovie = this.convertMovieDtoForPdf(data, false);
+    adaptedMovie.movie.push({
+      columnName: "Poster",
+      img: `${this.appConfig.TMBD_CONFIG.IMG_BASE_URL}${data.poster_path}`,
+      columnPosition: 4,
+      text: "",
+    });
+    const pdfHandler = new PdfGenerator({
+      title: `Movie: ${data.title}`,
+      columNames: [
+        { name: "Title", position: 1 },
+        { name: "Release", position: 2 },
+        { name: "Vote", position: 3 },
+        { name: "Poster", position: 4 },
+      ],
+      tableRows: [adaptedMovie],
+      footer: `Information on the movie ${data.title} at ${new Date().toLocaleDateString()}`,
+    });
+    const pdfBuffer = await pdfHandler.createBuffer();
     return pdfBuffer;
+  }
+
+  convertMovieDtoForPdf(
+    movie: MovieDTO,
+    enableHyperLink = true,
+  ): { movie: ITableRow[] } {
+    return {
+      movie: [
+        {
+          columnName: "Title",
+          text: movie.title,
+          hyperlink: enableHyperLink
+            ? `http://${process.env.APP_HOST}:${process.env.PORT}/movie/${movie.id}`
+            : undefined,
+          columnPosition: 1,
+        },
+        {
+          columnName: "Release",
+          text: movie.release_date,
+          columnPosition: 2,
+        },
+
+        {
+          columnName: "Vote",
+          text: movie.vote_average.toString(),
+          columnPosition: 3,
+        },
+      ],
+    };
   }
 }
