@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+/* eslint-disable node/no-unsupported-features/es-syntax */
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import axios from "axios";
 
 import { AppConfigService } from "@/src/shared/config.service";
@@ -42,12 +47,19 @@ export class MovieService {
       throw new BadRequestException("id not valid");
 
     const url = `${this.appConfig.TMBD_CONFIG.HOST}/${this.appConfig.TMBD_CONFIG.VERSION}/movie/${id}`;
-    const { data } = await axios.get<MovieDTO>(url, {
-      headers: {
-        Authorization: `Bearer ${this.appConfig.TMBD_CONFIG.READ_KEY}`,
-      },
-    });
-    const pdfHandler = new PdfGenerator([data]);
+    let movieData: MovieDTO;
+    try {
+      const { data } = await axios.get<MovieDTO>(url, {
+        headers: {
+          Authorization: `Bearer ${this.appConfig.TMBD_CONFIG.READ_KEY}`,
+        },
+      });
+      movieData = data;
+    } catch {
+      throw new NotFoundException(`Movie id ${id} not found`);
+    }
+
+    const pdfHandler = new PdfGenerator([movieData]);
     const pdfBuffer = await pdfHandler.createBuffer(true);
     return pdfBuffer;
   }
